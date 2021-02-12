@@ -14,7 +14,8 @@ using System.Text;
 using System.Text.Json;
 using System.Threading;
 
-namespace Sequential {
+namespace Sequential
+{
     // todo 1: check setting file provided as json format. Compare the fields with this class
     // DO NOT CHANGE
     public class Setting
@@ -51,7 +52,7 @@ namespace Sequential {
         public int waitingTime = 0;
         public readonly int bufferSize = 1024;
         public int client_id = 0;
-        public string cmd = "", cmd_message="";
+        public string cmd = "", cmd_message = "";
         public char commands_sep, command_msg_sep;
 
         public SimpleClient(int id, Setting settings)
@@ -59,8 +60,11 @@ namespace Sequential {
             this.settings = settings;
             client_id = id;
             // todo 4: implement a piece of code by which a command is selected (randomly) from the provided voting list (check settings)
-            cmd = "[Replace this with a command from the list provided by settings]";
-            cmd_message = "ClientId="+client_id.ToString()+settings.command_msg_sep+cmd;
+            var commands = this.settings.votingList.Split(settings.commands_sep);
+            var rnd = new Random(0);
+             
+            cmd = commands[rnd.Next(commands.Length)];
+            cmd_message = "ClientId=" + client_id.ToString() + settings.command_msg_sep + cmd;
 
             this.ipAddress = IPAddress.Parse(settings.serverIPAddress);
             waitingTime = new Random().Next(settings.clientMinStartingTime, settings.clientMaxStartingTime);
@@ -73,7 +77,10 @@ namespace Sequential {
                 localEndPoint = new IPEndPoint(ipAddress, settings.serverPortNumber);
                 clientSocket = new Socket(ipAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
             }
-            catch (Exception e){ Console.Out.WriteLine("[Client] Preparation: {0}", e.Message); }
+            catch (Exception e)
+            {
+                Console.Out.WriteLine("[Client] Preparation: {0}", e.Message);
+            }
         }
         // todo 6: check the sequence of method calls
         public void communicate()
@@ -89,11 +96,6 @@ namespace Sequential {
         }
         public void startCommunication()
         {
-            byte[] messageReceived = new byte[bufferSize];
-            int numBytes = 0;
-            String rcvdMsg = null;
-            string reply = "";
-            bool stop = false;
             // a random delay for each client
             Thread.Sleep(waitingTime);
             Console.Out.WriteLine("[Client] **************");
@@ -106,31 +108,35 @@ namespace Sequential {
                 Console.WriteLine("[Client] connected to --> {0} ", clientSocket.RemoteEndPoint.ToString());
 
                 //todo 9: This loop implements communication protocol on the client side
-                while(!stop)
+                while (true)
                 {
-                    numBytes = clientSocket.Receive(messageReceived);
-                    rcvdMsg = Encoding.UTF8.GetString(messageReceived, 0, numBytes);
-                    Console.WriteLine("[Client] from Server <-- {0}", rcvdMsg);
-                    reply = this.processMessage(rcvdMsg);
+                    byte[] messageReceived = new byte[bufferSize];
+                    var numBytes = clientSocket.Receive(messageReceived);
+                    var recievedMessage = Encoding.UTF8.GetString(messageReceived, 0, numBytes);
+                    Console.WriteLine("[Client] from Server <-- {0}", recievedMessage);
+                    var reply = this.processMessage(recievedMessage);
                     if (reply != Message.empty)
                         this.sendMessage(reply);
                     else
-                        stop = true;
+                        break;
                 }
             }
             catch (Exception e)
-            { Console.WriteLine(e.Message);  }
+            { 
+                Console.WriteLine(e.Message);
+            }
         }
         public string processMessage(string msg)
         {
             // todo 10: check how the received message is processed and what would be a proper reply
             string replyMsg = Message.empty;
+
             try
             {
                 switch (msg)
                 {
                     case Message.ready:
-                        if (client_id==-1) // last client terminates the experiment
+                        if (client_id == -1) // last client terminates the experiment
                             replyMsg = Message.terminate;
                         else
                             replyMsg = this.cmd_message;
@@ -141,7 +147,9 @@ namespace Sequential {
                 }
             }
             catch (Exception e)
-            {   Console.Out.WriteLine("[Client] Process Message {0}", e.Message); }
+            {
+                Console.Out.WriteLine("[Client] Process Message {0}", e.Message);
+            }
 
             return replyMsg;
         }
@@ -149,9 +157,9 @@ namespace Sequential {
         public void sendMessage(string msg)
         {
             // some coloring in console just for better readability
-            if(msg==this.cmd)
+            if (msg == this.cmd)
                 Console.ForegroundColor = ConsoleColor.DarkGreen;
-            if(msg==Message.terminate)
+            if (msg == Message.terminate)
                 Console.ForegroundColor = ConsoleColor.DarkRed;
             Console.Out.WriteLine("[Client] Message to be sent: {0}", msg);
             Console.ResetColor();
@@ -176,7 +184,7 @@ namespace Sequential {
             clients = new SimpleClient[settings.experimentNumberOfClients];
             for (int i = 0; i < settings.experimentNumberOfClients; i++)
             {
-                clients[i] = new SimpleClient(i+1, settings); // id>0 means this is not a terminating client
+                clients[i] = new SimpleClient(i + 1, settings); // id>0 means this is not a terminating client
             }
         }
         public void configure()
@@ -187,7 +195,8 @@ namespace Sequential {
                 string configContent = File.ReadAllText(configFile);
                 this.settings = JsonSerializer.Deserialize<Setting>(configContent);
             }
-            catch (Exception e) {
+            catch (Exception e)
+            {
                 Console.WriteLine("[Server] Configuration {0}", e.Message);
                 Environment.Exit(0);
             }

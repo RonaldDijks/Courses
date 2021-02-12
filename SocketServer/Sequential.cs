@@ -76,7 +76,11 @@ namespace Sequential
                     this.numOfClients++;
                     this.handleClient(connection);
                 }
-            }catch (Exception e){ Console.Out.WriteLine("[Server] Preparation: {0}",e.Message); }
+            }
+            catch (Exception e)
+            {
+                Console.Out.WriteLine("[Server] Preparation: {0}", e.Message);
+            }
         }
 
         // todo 5: what is the functionality of this method?
@@ -84,7 +88,6 @@ namespace Sequential
         {
             string data = "", reply = "";
             byte[] bytes = new Byte[bufferSize];
-
             this.sendMessage(con, Message.ready);
             int numByte = con.Receive(bytes);
             data = Encoding.UTF8.GetString(bytes, 0, numByte);
@@ -118,7 +121,11 @@ namespace Sequential
                         Console.ResetColor();
                         break;
                 }
-            }catch (Exception e){   Console.Out.WriteLine("[Server] Process Message {0}", e.Message);    }
+            }
+            catch (Exception e)
+            {
+                Console.Out.WriteLine("[Server] Process Message {0}", e.Message);
+            }
 
             return replyMsg;
         }
